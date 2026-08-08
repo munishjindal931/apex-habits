@@ -110,13 +110,7 @@ export function OnboardingScreen() {
             <Text style={styles.primaryButtonText}>Get Started →</Text>
           </Pressable>
 
-          <Pressable
-            style={styles.authButton}
-            onPress={() => {
-              finish();
-              navigation.navigate('Auth');
-            }}
-          >
+          <Pressable style={styles.authButton} onPress={finish}>
             <Ionicons name="log-in-outline" size={18} color="#6366F1" />
             <Text style={styles.authButtonText}>Already have an account? Sign In / Sign Up</Text>
           </Pressable>

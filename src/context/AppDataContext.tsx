@@ -26,7 +26,7 @@ function useAppDataValue() {
 
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState<boolean>(true);
+  const [isGuest, setIsGuest] = useState<boolean>(false);
   const [celebration, setCelebration] = useState<{ kind: CelebrationKind; label?: string }>({ kind: null });
   const [devToolsVisible, setDevToolsVisible] = useState(false);
   const [, setTick] = useState(0);

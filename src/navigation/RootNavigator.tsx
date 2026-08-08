@@ -25,9 +25,11 @@ const MinimalDarkTheme = {
 };
 
 export function RootNavigator() {
-  const { settings, loaded, signInAsGuest } = useAppData();
+  const { settings, loaded, user, isGuest, signInAsGuest } = useAppData();
 
   if (!loaded) return null;
+
+  const isAuthenticated = Boolean(user || isGuest);
 
   return (
     <NavigationContainer theme={MinimalDarkTheme}>
@@ -42,20 +44,16 @@ export function RootNavigator() {
         }}
       >
         {!settings.onboardingComplete ? (
-          <>
-            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Auth" options={{ presentation: 'modal', title: 'Sign In / Sign Up' }}>
-              {({ navigation }) => (
-                <AuthScreen
-                  onContinueAsGuest={() => {
-                    signInAsGuest();
-                    navigation.goBack();
-                  }}
-                  onSuccess={() => navigation.goBack()}
-                />
-              )}
-            </Stack.Screen>
-          </>
+          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+        ) : !isAuthenticated ? (
+          <Stack.Screen name="Auth" options={{ headerShown: false }}>
+            {() => (
+              <AuthScreen
+                onContinueAsGuest={() => signInAsGuest()}
+                onSuccess={() => {}}
+              />
+            )}
+          </Stack.Screen>
         ) : (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
@@ -67,17 +65,6 @@ export function RootNavigator() {
               component={AddEditHabitScreen}
               options={{ presentation: 'modal', title: 'New Habit' }}
             />
-            <Stack.Screen name="Auth" options={{ presentation: 'modal', title: 'Sign In / Sign Up' }}>
-              {({ navigation }) => (
-                <AuthScreen
-                  onContinueAsGuest={() => {
-                    signInAsGuest();
-                    navigation.goBack();
-                  }}
-                  onSuccess={() => navigation.goBack()}
-                />
-              )}
-            </Stack.Screen>
           </>
         )}
       </Stack.Navigator>

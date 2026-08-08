@@ -69,7 +69,7 @@ export function SettingsScreen() {
               <Text style={styles.signOutButtonText}>Sign Out of Account</Text>
             </Pressable>
           ) : (
-            <Pressable style={styles.signInButton} onPress={() => navigation.navigate('Auth')}>
+            <Pressable style={styles.signInButton} onPress={signOut}>
               <Ionicons name="log-in-outline" size={18} color="#FFFFFF" />
               <Text style={styles.signInButtonText}>Sign In / Create Account ➔</Text>
             </Pressable>
