@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
@@ -26,12 +25,9 @@ const MinimalDarkTheme = {
 };
 
 export function RootNavigator() {
-  const { settings, loaded, user, isGuest, signInAsGuest } = useAppData();
-  const [showAuthScreen, setShowAuthScreen] = useState(false);
+  const { settings, loaded, signInAsGuest } = useAppData();
 
   if (!loaded) return null;
-
-  const requiresAuth = !user && !isGuest && showAuthScreen;
 
   return (
     <NavigationContainer theme={MinimalDarkTheme}>
@@ -46,19 +42,20 @@ export function RootNavigator() {
         }}
       >
         {!settings.onboardingComplete ? (
-          <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-        ) : requiresAuth ? (
-          <Stack.Screen name="Auth" options={{ headerShown: false }}>
-            {() => (
-              <AuthScreen
-                onContinueAsGuest={() => {
-                  signInAsGuest();
-                  setShowAuthScreen(false);
-                }}
-                onSuccess={() => setShowAuthScreen(false)}
-              />
-            )}
-          </Stack.Screen>
+          <>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Auth" options={{ presentation: 'modal', title: 'Sign In / Sign Up' }}>
+              {({ navigation }) => (
+                <AuthScreen
+                  onContinueAsGuest={() => {
+                    signInAsGuest();
+                    navigation.goBack();
+                  }}
+                  onSuccess={() => navigation.goBack()}
+                />
+              )}
+            </Stack.Screen>
+          </>
         ) : (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />
@@ -70,6 +67,17 @@ export function RootNavigator() {
               component={AddEditHabitScreen}
               options={{ presentation: 'modal', title: 'New Habit' }}
             />
+            <Stack.Screen name="Auth" options={{ presentation: 'modal', title: 'Sign In / Sign Up' }}>
+              {({ navigation }) => (
+                <AuthScreen
+                  onContinueAsGuest={() => {
+                    signInAsGuest();
+                    navigation.goBack();
+                  }}
+                  onSuccess={() => navigation.goBack()}
+                />
+              )}
+            </Stack.Screen>
           </>
         )}
       </Stack.Navigator>

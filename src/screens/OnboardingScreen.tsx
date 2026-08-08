@@ -1,13 +1,17 @@
 import { useState } from 'react';
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
 import { Habit, HabitType } from '../types';
 import { PresetSelector } from '../components/PresetSelector';
 import { HabitPreset } from '../constants/presets';
+import { RootStackParamList } from '../navigation/types';
 
 export function OnboardingScreen() {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const { addHabit, startChallenge, updateSettings } = useAppData();
   const [step, setStep] = useState<'overview' | 'create' | 'challenge'>('overview');
   const [name, setName] = useState('');
@@ -91,12 +95,12 @@ export function OnboardingScreen() {
 
             <View style={styles.featureCard}>
               <View style={styles.iconCircle}>
-                <Ionicons name="notifications" size={24} color="#5856D6" />
+                <Ionicons name="cloud-done" size={24} color="#5856D6" />
               </View>
               <View style={styles.featureText}>
-                <Text style={styles.featureTitle}>4. Smart Daily Reminders</Text>
+                <Text style={styles.featureTitle}>4. Supabase Cloud Sync</Text>
                 <Text style={styles.featureDesc}>
-                  Set custom push notification times per habit to keep you on schedule.
+                  0ms local-first cache with automatic multi-device cloud database sync.
                 </Text>
               </View>
             </View>
@@ -104,6 +108,17 @@ export function OnboardingScreen() {
 
           <Pressable style={styles.primaryButton} onPress={() => setStep('create')}>
             <Text style={styles.primaryButtonText}>Get Started →</Text>
+          </Pressable>
+
+          <Pressable
+            style={styles.authButton}
+            onPress={() => {
+              finish();
+              navigation.navigate('Auth');
+            }}
+          >
+            <Ionicons name="log-in-outline" size={18} color="#6366F1" />
+            <Text style={styles.authButtonText}>Already have an account? Sign In / Sign Up</Text>
           </Pressable>
         </ScrollView>
       </SafeAreaView>
@@ -232,7 +247,7 @@ const styles = StyleSheet.create({
   },
   featureCards: {
     gap: 16,
-    marginBottom: 32,
+    marginBottom: 24,
   },
   featureCard: {
     flexDirection: 'row',
@@ -383,7 +398,7 @@ const styles = StyleSheet.create({
     borderRadius: 14,
     paddingVertical: 16,
     marginHorizontal: 24,
-    marginBottom: 16,
+    marginBottom: 12,
     alignItems: 'center',
   },
   primaryButtonDisabled: {
@@ -392,6 +407,19 @@ const styles = StyleSheet.create({
   primaryButtonText: {
     color: '#FFFFFF',
     fontSize: 16,
+    fontWeight: '700',
+  },
+  authButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    marginHorizontal: 24,
+  },
+  authButtonText: {
+    color: '#6366F1',
+    fontSize: 14,
     fontWeight: '700',
   },
   skipButton: {

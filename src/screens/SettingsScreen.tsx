@@ -1,13 +1,17 @@
 import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useNavigation } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
 import { isSupabaseConfigured } from '../lib/supabase';
 import { requestNotificationPermission } from '../feedback/notifications';
 import { DevToolsModal } from '../components/DevToolsModal';
+import { RootStackParamList } from '../navigation/types';
 
 export function SettingsScreen() {
-  const { settings, updateSettings, devToolsVisible, setDevToolsVisible, user, isGuest, signOut } = useAppData();
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const { settings, updateSettings, devToolsVisible, setDevToolsVisible, user, signOut } = useAppData();
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value) {
@@ -59,10 +63,15 @@ export function SettingsScreen() {
             <Text style={styles.syncBadgeText}>0ms Local-First Cache Engine Active</Text>
           </View>
 
-          {user && (
+          {user ? (
             <Pressable style={styles.signOutButton} onPress={handleSignOut}>
               <Ionicons name="log-out-outline" size={16} color="#EF4444" />
               <Text style={styles.signOutButtonText}>Sign Out of Account</Text>
+            </Pressable>
+          ) : (
+            <Pressable style={styles.signInButton} onPress={() => navigation.navigate('Auth')}>
+              <Ionicons name="log-in-outline" size={18} color="#FFFFFF" />
+              <Text style={styles.signInButtonText}>Sign In / Create Account ➔</Text>
             </Pressable>
           )}
         </View>
@@ -182,6 +191,21 @@ const styles = StyleSheet.create({
     color: '#22C55E',
     fontSize: 12,
     fontWeight: '600',
+  },
+  signInButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#6366F1',
+    borderRadius: 12,
+    paddingVertical: 12,
+    marginTop: 14,
+  },
+  signInButtonText: {
+    color: '#FFFFFF',
+    fontSize: 14,
+    fontWeight: '700',
   },
   signOutButton: {
     flexDirection: 'row',
