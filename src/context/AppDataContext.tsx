@@ -26,7 +26,6 @@ function useAppDataValue() {
 
   const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
-  const [isGuest, setIsGuest] = useState<boolean>(false);
   const [celebration, setCelebration] = useState<{ kind: CelebrationKind; label?: string }>({ kind: null });
   const [devToolsVisible, setDevToolsVisible] = useState(false);
   const [, setTick] = useState(0);
@@ -42,7 +41,6 @@ function useAppDataValue() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) setIsGuest(false);
     });
 
     const {
@@ -50,23 +48,65 @@ function useAppDataValue() {
     } = supabase.auth.onAuthStateChange((_event, session) => {
       setSession(session);
       setUser(session?.user ?? null);
-      if (session?.user) setIsGuest(false);
     });
 
     return () => subscription.unsubscribe();
   }, []);
 
-  // Sync with Supabase on Auth Login
+  // Bi-directional Sync on Auth Login (Push local data first, then merge remote)
   useEffect(() => {
-    if (!user || isGuest || !isSupabaseConfigured) return;
+    if (!user || !isSupabaseConfigured) return;
 
-    const pullFromSupabase = async () => {
+    const syncWithSupabase = async () => {
       try {
-        // Fetch Habits
+        // 1. Push any local habits to Supabase first so habits created during onboarding are saved
+        if (habitsApi.habits.length > 0) {
+          const habitPayloads = habitsApi.habits.map((h) => ({
+            id: h.id,
+            user_id: user.id,
+            name: h.name,
+            type: h.type,
+            target_count: h.targetCount,
+            reminder_time: h.reminderTime,
+            icon: h.icon,
+            color: h.color,
+          }));
+          await supabase.from('habits').upsert(habitPayloads, { onConflict: 'id' });
+
+          // Push local habit logs
+          const logPayloads: any[] = [];
+          habitsApi.habits.forEach((h) => {
+            Object.entries(h.log).forEach(([date, count]) => {
+              logPayloads.push({
+                user_id: user.id,
+                habit_id: h.id,
+                date,
+                count,
+              });
+            });
+          });
+          if (logPayloads.length > 0) {
+            await supabase.from('habit_logs').upsert(logPayloads, { onConflict: 'user_id,habit_id,date' });
+          }
+        }
+
+        // Push local challenges
+        if (challengesApi.challenges.length > 0) {
+          const challengePayloads = challengesApi.challenges.map((c) => ({
+            id: c.id,
+            user_id: user.id,
+            habit_id: c.habitId,
+            habit_name: c.habitName,
+            length_days: c.lengthDays,
+            start_date: c.startDate,
+            status: 'active',
+          }));
+          await supabase.from('challenges').upsert(challengePayloads, { onConflict: 'id' });
+        }
+
+        // 2. Pull all remote records from Supabase
         const { data: remoteHabits } = await supabase.from('habits').select('*').eq('user_id', user.id);
-        // Fetch Habit Logs
         const { data: remoteLogs } = await supabase.from('habit_logs').select('*').eq('user_id', user.id);
-        // Fetch Challenges
         const { data: remoteChallenges } = await supabase.from('challenges').select('*').eq('user_id', user.id);
 
         if (remoteHabits) {
@@ -110,11 +150,11 @@ function useAppDataValue() {
           });
         }
       } catch (err) {
-        console.warn('Background Supabase pull sync warning:', err);
+        console.warn('Supabase sync warning:', err);
       }
     };
 
-    pullFromSupabase();
+    syncWithSupabase();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
@@ -137,12 +177,12 @@ function useAppDataValue() {
     [challengesApi.challenges, habitsApi.habits, todayKey()]
   );
 
-  // Local-First Add Habit with Supabase Sync
+  // Add Habit with Supabase Sync
   const addHabit = useCallback(
     (input: NewHabitInput): Habit => {
       const habit = habitsApi.addHabit(input);
 
-      if (user && !isGuest && isSupabaseConfigured) {
+      if (user && isSupabaseConfigured) {
         supabase
           .from('habits')
           .insert({
@@ -161,15 +201,15 @@ function useAppDataValue() {
       }
       return habit;
     },
-    [habitsApi, user, isGuest]
+    [habitsApi, user]
   );
 
-  // Local-First Update Habit with Supabase Sync
+  // Update Habit with Supabase Sync
   const updateHabit = useCallback(
     (id: string, updates: Partial<Omit<Habit, 'id'>>) => {
       habitsApi.updateHabit(id, updates);
 
-      if (user && !isGuest && isSupabaseConfigured) {
+      if (user && isSupabaseConfigured) {
         const payload: Record<string, any> = {};
         if (updates.name !== undefined) payload.name = updates.name;
         if (updates.type !== undefined) payload.type = updates.type;
@@ -190,16 +230,16 @@ function useAppDataValue() {
         }
       }
     },
-    [habitsApi, user, isGuest]
+    [habitsApi, user]
   );
 
-  // Local-First Remove Habit with Supabase Sync
+  // Remove Habit with Supabase Sync
   const removeHabit = useCallback(
     (id: string) => {
       habitsApi.removeHabit(id);
       challengesApi.removeChallengesForHabit(id);
 
-      if (user && !isGuest && isSupabaseConfigured) {
+      if (user && isSupabaseConfigured) {
         supabase
           .from('habits')
           .delete()
@@ -210,10 +250,10 @@ function useAppDataValue() {
           });
       }
     },
-    [habitsApi, challengesApi, user, isGuest]
+    [habitsApi, challengesApi, user]
   );
 
-  // Local-First Log Habit with Supabase Sync
+  // Log Habit with Supabase Sync
   const logHabit = useCallback(
     (habitId: string, delta: number) => {
       const habit = habitsApi.habits.find((h) => h.id === habitId);
@@ -228,7 +268,7 @@ function useAppDataValue() {
       habitsApi.setLogCount(habitId, today, nextCount);
 
       // Async Sync Log to Supabase
-      if (user && !isGuest && isSupabaseConfigured) {
+      if (user && isSupabaseConfigured) {
         supabase
           .from('habit_logs')
           .upsert(
@@ -266,15 +306,15 @@ function useAppDataValue() {
         setCelebration({ kind: 'habit' });
       }
     },
-    [habitsApi, challengesApi, settingsApi.settings, chime, user, isGuest]
+    [habitsApi, challengesApi, settingsApi.settings, chime, user]
   );
 
-  // Local-First Start Challenge with Supabase Sync
+  // Start Challenge with Supabase Sync
   const startChallenge = useCallback(
     (habit: Habit, lengthDays: number): Challenge => {
       const challenge = challengesApi.startChallenge(habit, lengthDays);
 
-      if (user && !isGuest && isSupabaseConfigured) {
+      if (user && isSupabaseConfigured) {
         supabase
           .from('challenges')
           .insert({
@@ -292,7 +332,7 @@ function useAppDataValue() {
       }
       return challenge;
     },
-    [challengesApi, user, isGuest]
+    [challengesApi, user]
   );
 
   const triggerCelebration = useCallback(
@@ -335,12 +375,23 @@ function useAppDataValue() {
         updatedLog[date] = habit.targetCount;
       }
       habitsApi.updateHabit(habit.id, { log: updatedLog });
+
+      if (user && isSupabaseConfigured) {
+        const logPayloads = Object.entries(updatedLog).map(([date, count]) => ({
+          user_id: user.id,
+          habit_id: habit.id,
+          date,
+          count,
+        }));
+        supabase.from('habit_logs').upsert(logPayloads, { onConflict: 'user_id,habit_id,date' });
+      }
+
       celebrateChallenge(settingsApi.settings, chime);
       setCelebration({ kind: 'challenge', label: `${challenge.lengthDays}-Day Challenge Complete!` });
       challengesApi.markCelebrated(challenge.id);
       forceUpdate();
     },
-    [challengesApi.challenges, habitsApi.habits, habitsApi, settingsApi.settings, chime, forceUpdate]
+    [challengesApi.challenges, habitsApi.habits, habitsApi, settingsApi.settings, chime, forceUpdate, user]
   );
 
   const seedMockHistory = useCallback(() => {
@@ -354,9 +405,19 @@ function useAppDataValue() {
         }
       }
       habitsApi.updateHabit(habit.id, { log: newLog });
+
+      if (user && isSupabaseConfigured) {
+        const logPayloads = Object.entries(newLog).map(([date, count]) => ({
+          user_id: user.id,
+          habit_id: habit.id,
+          date,
+          count,
+        }));
+        supabase.from('habit_logs').upsert(logPayloads, { onConflict: 'user_id,habit_id,date' });
+      }
     });
     forceUpdate();
-  }, [habitsApi, forceUpdate]);
+  }, [habitsApi, forceUpdate, user]);
 
   const clearCelebration = useCallback(() => setCelebration({ kind: null }), []);
 
@@ -366,11 +427,6 @@ function useAppDataValue() {
     }
     setSession(null);
     setUser(null);
-    setIsGuest(true);
-  }, []);
-
-  const signInAsGuest = useCallback(() => {
-    setIsGuest(true);
   }, []);
 
   return {
@@ -387,9 +443,7 @@ function useAppDataValue() {
     loaded,
     session,
     user,
-    isGuest,
     signOut,
-    signInAsGuest,
     celebration: celebration.kind,
     celebrationLabel: celebration.label,
     clearCelebration,

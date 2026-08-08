@@ -25,11 +25,9 @@ const MinimalDarkTheme = {
 };
 
 export function RootNavigator() {
-  const { settings, loaded, user, isGuest, signInAsGuest } = useAppData();
+  const { settings, loaded, user } = useAppData();
 
   if (!loaded) return null;
-
-  const isAuthenticated = Boolean(user || isGuest);
 
   return (
     <NavigationContainer theme={MinimalDarkTheme}>
@@ -45,14 +43,9 @@ export function RootNavigator() {
       >
         {!settings.onboardingComplete ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
-        ) : !isAuthenticated ? (
+        ) : !user ? (
           <Stack.Screen name="Auth" options={{ headerShown: false }}>
-            {() => (
-              <AuthScreen
-                onContinueAsGuest={() => signInAsGuest()}
-                onSuccess={() => {}}
-              />
-            )}
+            {() => <AuthScreen onSuccess={() => {}} />}
           </Stack.Screen>
         ) : (
           <>

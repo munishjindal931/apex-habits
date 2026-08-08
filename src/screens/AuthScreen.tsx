@@ -6,11 +6,10 @@ import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { SupabaseSetupModal } from '../components/SupabaseSetupModal';
 
 type Props = {
-  onContinueAsGuest: () => void;
   onSuccess: () => void;
 };
 
-export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
+export function AuthScreen({ onSuccess }: Props) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -28,11 +27,8 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
     if (!isSupabaseConfigured) {
       Alert.alert(
         'Supabase Not Connected',
-        'Please enter your Supabase URL & Anon Key to authenticate with cloud database.',
-        [
-          { text: 'Connect Supabase', onPress: () => setSetupModalVisible(true) },
-          { text: 'Use Local Mode', onPress: onContinueAsGuest },
-        ]
+        'Please enter your Supabase URL & Anon Key to authenticate.',
+        [{ text: 'Connect Supabase', onPress: () => setSetupModalVisible(true) }]
       );
       return;
     }
@@ -40,16 +36,23 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
     setLoading(true);
     try {
       if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({
+        const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
         });
         if (error) throw error;
-        Alert.alert(
-          'Account Created! 🎉',
-          'Your account has been created. Check your email if verification is enabled, or sign in.',
-          [{ text: 'OK', onPress: () => setMode('signin') }]
-        );
+
+        // Auto sign in if session returned directly
+        if (data.session) {
+          Alert.alert('Account Created! 🎉', 'Welcome to Apex Habits!');
+          onSuccess();
+        } else {
+          Alert.alert(
+            'Account Created! 🎉',
+            'Your account has been created. Please sign in with your email and password.',
+            [{ text: 'Sign In Now', onPress: () => setMode('signin') }]
+          );
+        }
       } else {
         const { error } = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
@@ -76,7 +79,9 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
             </View>
             <Text style={styles.title}>Apex Habits</Text>
             <Text style={styles.subtitle}>
-              {mode === 'signin' ? 'Sign in to sync your habits & streak data' : 'Create an account to track your habits anywhere'}
+              {mode === 'signin'
+                ? 'Sign in to access your habits & cloud database'
+                : 'Create an account to start tracking habits in Supabase'}
             </Text>
           </View>
 
@@ -146,23 +151,11 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {mode === 'signin' ? 'Sign In' : 'Create Account'}
+                  {mode === 'signin' ? 'Sign In to Account' : 'Create Supabase Account'}
                 </Text>
               )}
             </Pressable>
           </View>
-
-          {/* Guest / Offline Mode Fallback */}
-          <View style={styles.dividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>or</Text>
-            <View style={styles.divider} />
-          </View>
-
-          <Pressable style={styles.guestButton} onPress={onContinueAsGuest}>
-            <Ionicons name="flash-outline" size={18} color="#9CA3AF" />
-            <Text style={styles.guestButtonText}>Continue in Local Mode (Offline)</Text>
-          </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
 
@@ -325,37 +318,5 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 16,
     fontWeight: '700',
-  },
-  dividerRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 16,
-  },
-  divider: {
-    flex: 1,
-    height: 1,
-    backgroundColor: '#26262E',
-  },
-  dividerText: {
-    color: '#6B7280',
-    fontSize: 12,
-    paddingHorizontal: 12,
-    textTransform: 'uppercase',
-  },
-  guestButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#16161A',
-    borderRadius: 14,
-    paddingVertical: 14,
-    borderWidth: 1,
-    borderColor: '#26262E',
-  },
-  guestButtonText: {
-    color: '#9CA3AF',
-    fontSize: 14,
-    fontWeight: '600',
   },
 });
