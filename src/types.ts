@@ -12,6 +12,8 @@ export type Habit = {
   log: Record<string, number>;
 };
 
+export type NewHabitInput = Omit<Habit, 'id' | 'createdAt' | 'log'>;
+
 export type ChallengeStatus = 'active' | 'completed' | 'failed';
 
 export type Challenge = {

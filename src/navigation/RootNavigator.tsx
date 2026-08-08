@@ -1,8 +1,10 @@
+import { useState } from 'react';
 import { DarkTheme, NavigationContainer } from '@react-navigation/native';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { RootStackParamList } from './types';
 import { useAppData } from '../context/AppDataContext';
 import { OnboardingScreen } from '../screens/OnboardingScreen';
+import { AuthScreen } from '../screens/AuthScreen';
 import { HomeScreen } from '../screens/HomeScreen';
 import { AddEditHabitScreen } from '../screens/AddEditHabitScreen';
 import { HabitDetailScreen } from '../screens/HabitDetailScreen';
@@ -24,9 +26,12 @@ const MinimalDarkTheme = {
 };
 
 export function RootNavigator() {
-  const { settings, loaded } = useAppData();
+  const { settings, loaded, user, isGuest, signInAsGuest } = useAppData();
+  const [showAuthScreen, setShowAuthScreen] = useState(false);
 
   if (!loaded) return null;
+
+  const requiresAuth = !user && !isGuest && showAuthScreen;
 
   return (
     <NavigationContainer theme={MinimalDarkTheme}>
@@ -42,6 +47,18 @@ export function RootNavigator() {
       >
         {!settings.onboardingComplete ? (
           <Stack.Screen name="Onboarding" component={OnboardingScreen} options={{ headerShown: false }} />
+        ) : requiresAuth ? (
+          <Stack.Screen name="Auth" options={{ headerShown: false }}>
+            {() => (
+              <AuthScreen
+                onContinueAsGuest={() => {
+                  signInAsGuest();
+                  setShowAuthScreen(false);
+                }}
+                onSuccess={() => setShowAuthScreen(false)}
+              />
+            )}
+          </Stack.Screen>
         ) : (
           <>
             <Stack.Screen name="Home" component={HomeScreen} />

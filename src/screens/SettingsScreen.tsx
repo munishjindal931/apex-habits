@@ -2,11 +2,12 @@ import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 're
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
+import { isSupabaseConfigured } from '../lib/supabase';
 import { requestNotificationPermission } from '../feedback/notifications';
 import { DevToolsModal } from '../components/DevToolsModal';
 
 export function SettingsScreen() {
-  const { settings, updateSettings, devToolsVisible, setDevToolsVisible } = useAppData();
+  const { settings, updateSettings, devToolsVisible, setDevToolsVisible, user, isGuest, signOut } = useAppData();
 
   const handleToggleNotifications = async (value: boolean) => {
     if (value) {
@@ -22,9 +23,50 @@ export function SettingsScreen() {
     updateSettings({ notificationsEnabled: value });
   };
 
+  const handleSignOut = () => {
+    Alert.alert('Sign Out?', 'You will be signed out of your cloud account. Local cache will remain.', [
+      { text: 'Cancel', style: 'cancel' },
+      { text: 'Sign Out', style: 'destructive', onPress: signOut },
+    ]);
+  };
+
   return (
     <SafeAreaView style={styles.safe} edges={['bottom']}>
       <ScrollView contentContainerStyle={styles.content}>
+        {/* Account & Sync Section */}
+        <Text style={styles.sectionTitle}>Account & Supabase Cloud Sync</Text>
+        <View style={styles.card}>
+          <View style={styles.accountHeader}>
+            <View style={styles.avatarCircle}>
+              <Ionicons name={user ? 'person' : 'flash'} size={20} color="#6366F1" />
+            </View>
+            <View style={styles.accountInfo}>
+              <Text style={styles.accountName}>
+                {user ? user.email : 'Guest Mode (Local Cache)'}
+              </Text>
+              <Text style={styles.accountStatus}>
+                {user
+                  ? 'Connected to Supabase Database'
+                  : isSupabaseConfigured
+                  ? 'Local Cache Active · Sign in to sync across devices'
+                  : 'Supabase URL/Key needed for remote cloud sync'}
+              </Text>
+            </View>
+          </View>
+
+          <View style={styles.syncBadge}>
+            <Ionicons name="checkmark-circle" size={16} color="#22C55E" />
+            <Text style={styles.syncBadgeText}>0ms Local-First Cache Engine Active</Text>
+          </View>
+
+          {user && (
+            <Pressable style={styles.signOutButton} onPress={handleSignOut}>
+              <Ionicons name="log-out-outline" size={16} color="#EF4444" />
+              <Text style={styles.signOutButtonText}>Sign Out of Account</Text>
+            </Pressable>
+          )}
+        </View>
+
         <Text style={styles.sectionTitle}>Reminders</Text>
         <View style={styles.row}>
           <View style={styles.rowText}>
@@ -90,6 +132,70 @@ const styles = StyleSheet.create({
     marginBottom: 10,
     textTransform: 'uppercase',
     letterSpacing: 1.2,
+  },
+  card: {
+    backgroundColor: '#16161A',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#26262E',
+    marginBottom: 8,
+  },
+  accountHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 14,
+  },
+  avatarCircle: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#202026',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  accountInfo: {
+    flex: 1,
+  },
+  accountName: {
+    fontSize: 15,
+    fontWeight: '700',
+    color: '#F4F4F5',
+  },
+  accountStatus: {
+    fontSize: 12,
+    color: '#9CA3AF',
+    marginTop: 2,
+  },
+  syncBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#14291D',
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 10,
+    alignSelf: 'flex-start',
+  },
+  syncBadgeText: {
+    color: '#22C55E',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  signOutButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginTop: 14,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#26262E',
+  },
+  signOutButtonText: {
+    color: '#EF4444',
+    fontSize: 13,
+    fontWeight: '600',
   },
   row: {
     flexDirection: 'row',
