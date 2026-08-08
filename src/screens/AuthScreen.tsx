@@ -27,6 +27,7 @@ export function AuthScreen({ onSuccess }: Props) {
     }
 
     setLoading(true);
+    console.log(`[AuthScreen] Attempting ${mode} for:`, trimmedEmail);
     try {
       if (mode === 'signin') {
         const { data, error } = await supabase.auth.signInWithPassword({
@@ -35,6 +36,7 @@ export function AuthScreen({ onSuccess }: Props) {
         });
 
         if (error) {
+          console.warn('[AuthScreen] signInWithPassword returned error:', error.message);
           if (error.message.toLowerCase().includes('invalid login credentials')) {
             Alert.alert(
               'Account Not Found',
@@ -47,19 +49,23 @@ export function AuthScreen({ onSuccess }: Props) {
                     setMode('signup');
                     setLoading(true);
                     try {
+                      console.log('[AuthScreen] Auto sign-up triggered for:', trimmedEmail);
                       const signUpRes = await supabase.auth.signUp({ email: trimmedEmail, password });
                       if (signUpRes.error) throw signUpRes.error;
                       if (signUpRes.data.user && signUpRes.data.session) {
+                        console.log('[AuthScreen] Auto sign-up succeeded with session!');
                         setAuthSession(signUpRes.data.session, signUpRes.data.user);
                         if (onSuccess) onSuccess();
                       } else {
                         const inRes = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
                         if (inRes.data.user && inRes.data.session) {
+                          console.log('[AuthScreen] Auto sign-in after sign-up succeeded with session!');
                           setAuthSession(inRes.data.session, inRes.data.user);
                           if (onSuccess) onSuccess();
                         }
                       }
                     } catch (err: any) {
+                      console.error('[AuthScreen] Auto sign-up error:', err);
                       Alert.alert('Sign Up Error', err.message);
                     } finally {
                       setLoading(false);
@@ -74,6 +80,7 @@ export function AuthScreen({ onSuccess }: Props) {
         }
 
         if (data.session && data.user) {
+          console.log('[AuthScreen] Sign in successful for:', data.user.email);
           setAuthSession(data.session, data.user);
           if (onSuccess) onSuccess();
         }
@@ -84,6 +91,7 @@ export function AuthScreen({ onSuccess }: Props) {
         });
 
         if (error) {
+          console.warn('[AuthScreen] signUp returned error:', error.message);
           if (error.message.toLowerCase().includes('already registered')) {
             Alert.alert('Account Exists', 'This email is already registered. Signing you in...', [
               {
@@ -95,10 +103,12 @@ export function AuthScreen({ onSuccess }: Props) {
                     const inRes = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
                     if (inRes.error) throw inRes.error;
                     if (inRes.data.session && inRes.data.user) {
+                      console.log('[AuthScreen] Sign in after account exist check succeeded!');
                       setAuthSession(inRes.data.session, inRes.data.user);
                       if (onSuccess) onSuccess();
                     }
                   } catch (err: any) {
+                    console.error('[AuthScreen] Sign in error:', err);
                     Alert.alert('Sign In Error', err.message);
                   } finally {
                     setLoading(false);
@@ -113,14 +123,17 @@ export function AuthScreen({ onSuccess }: Props) {
 
         if (data.user) {
           if (data.session) {
+            console.log('[AuthScreen] Sign up successful with session for:', data.user.email);
             setAuthSession(data.session, data.user);
             if (onSuccess) onSuccess();
           } else {
+            console.log('[AuthScreen] Sign up succeeded, performing immediate signInWithPassword...');
             const signInRes = await supabase.auth.signInWithPassword({
               email: trimmedEmail,
               password,
             });
             if (signInRes.data.session && signInRes.data.user) {
+              console.log('[AuthScreen] Immediate sign in succeeded!');
               setAuthSession(signInRes.data.session, signInRes.data.user);
               if (onSuccess) onSuccess();
             }
@@ -128,6 +141,7 @@ export function AuthScreen({ onSuccess }: Props) {
         }
       }
     } catch (err: any) {
+      console.error('[AuthScreen] handleAuth error:', err);
       Alert.alert('Authentication Error', err.message || 'Failed to authenticate.');
     } finally {
       setLoading(false);
