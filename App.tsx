@@ -5,10 +5,10 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 
 export default function App() {
   return (
-    <SafeAreaProvider>
+    <SafeAreaProvider style={{ backgroundColor: '#0B0B0E' }}>
       <AppDataProvider>
         <RootNavigator />
-        <StatusBar style="auto" />
+        <StatusBar style="light" backgroundColor="#0B0B0E" />
       </AppDataProvider>
     </SafeAreaProvider>
   );

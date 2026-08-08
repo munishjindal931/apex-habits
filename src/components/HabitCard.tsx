@@ -1,4 +1,5 @@
 import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { Habit } from '../types';
 
 type Props = {
@@ -13,15 +14,34 @@ type Props = {
 };
 
 export function HabitCard({ habit, todayCount, isComplete, streak, onPress, onToggle, onIncrement, onDecrement }: Props) {
+  const themeColor = habit.color ?? '#6366F1';
+  const iconName = (habit.icon as any) ?? 'flame';
+
   return (
     <Pressable style={[styles.card, isComplete && styles.cardDone]} onPress={onPress}>
+      {/* Habit Icon Badge */}
+      <View style={[styles.iconBadge, { backgroundColor: isComplete ? themeColor : `${themeColor}20` }]}>
+        <Ionicons name={iconName} size={20} color={isComplete ? '#FFFFFF' : themeColor} />
+      </View>
+
+      {/* Habit Info */}
+      <View style={styles.cardText}>
+        <Text style={[styles.habitName, isComplete && styles.habitNameDone]} numberOfLines={1}>
+          {habit.name}
+        </Text>
+        <Text style={styles.streak} numberOfLines={1}>
+          {streak > 0 ? `🔥 ${streak} day streak` : 'Daily habit'}
+        </Text>
+      </View>
+
+      {/* Completion Control */}
       {habit.type === 'binary' ? (
         <Pressable
-          style={[styles.checkbox, isComplete && styles.checkboxDone]}
+          style={[styles.checkbox, isComplete && { backgroundColor: '#22C55E', borderColor: '#22C55E' }]}
           hitSlop={8}
           onPress={onToggle}
         >
-          {isComplete && <Text style={styles.checkmark}>✓</Text>}
+          {isComplete && <Ionicons name="checkmark" size={18} color="#FFFFFF" />}
         </Pressable>
       ) : (
         <View style={styles.stepper}>
@@ -31,15 +51,11 @@ export function HabitCard({ habit, todayCount, isComplete, streak, onPress, onTo
           <Text style={styles.stepperCount}>
             {todayCount}/{habit.targetCount}
           </Text>
-          <Pressable style={styles.stepperButton} hitSlop={8} onPress={onIncrement}>
-            <Text style={styles.stepperButtonText}>+</Text>
+          <Pressable style={[styles.stepperButton, isComplete && { backgroundColor: '#22C55E' }]} hitSlop={8} onPress={onIncrement}>
+            <Text style={[styles.stepperButtonText, isComplete && { color: '#FFFFFF' }]}>+</Text>
           </Pressable>
         </View>
       )}
-      <View style={styles.cardText}>
-        <Text style={[styles.habitName, isComplete && styles.habitNameDone]}>{habit.name}</Text>
-        <Text style={styles.streak}>{streak > 0 ? `🔥 ${streak} day streak` : 'No streak yet'}</Text>
-      </View>
     </Pressable>
   );
 }
@@ -48,76 +64,79 @@ const styles = StyleSheet.create({
   card: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 14,
+    backgroundColor: '#16161A',
+    borderRadius: 16,
     padding: 16,
-    marginBottom: 12,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: { width: 0, height: 2 },
-    elevation: 1,
+    marginBottom: 10,
+    borderWidth: 1,
+    borderColor: '#26262E',
   },
   cardDone: {
-    backgroundColor: '#EAF9EE',
+    backgroundColor: '#131916',
+    borderColor: '#1E3A2B',
   },
-  checkbox: {
-    width: 28,
-    height: 28,
+  iconBadge: {
+    width: 42,
+    height: 42,
     borderRadius: 14,
-    borderWidth: 2,
-    borderColor: '#C7C7CC',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
   },
-  checkboxDone: {
-    backgroundColor: '#34C759',
-    borderColor: '#34C759',
+  cardText: {
+    flex: 1,
+    marginRight: 10,
   },
-  checkmark: {
-    color: '#FFFFFF',
+  habitName: {
+    fontSize: 16,
     fontWeight: '700',
+    color: '#F4F4F5',
+  },
+  habitNameDone: {
+    color: '#9CA3AF',
+    textDecorationLine: 'line-through',
+  },
+  streak: {
+    fontSize: 12,
+    fontWeight: '500',
+    color: '#9CA3AF',
+    marginTop: 3,
+  },
+  checkbox: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    borderWidth: 1.5,
+    borderColor: '#3F3F46',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#202026',
   },
   stepper: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 14,
+    gap: 4,
   },
   stepperButton: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
-    backgroundColor: '#F2F2F7',
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    backgroundColor: '#202026',
+    borderWidth: 1,
+    borderColor: '#26262E',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperButtonText: {
-    fontSize: 18,
+    fontSize: 16,
     fontWeight: '700',
-    color: '#1C1C1E',
+    color: '#F4F4F5',
   },
   stepperCount: {
-    minWidth: 40,
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#F4F4F5',
+    minWidth: 34,
     textAlign: 'center',
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#48484A',
-  },
-  cardText: {
-    flex: 1,
-  },
-  habitName: {
-    fontSize: 17,
-    fontWeight: '600',
-    color: '#1C1C1E',
-  },
-  habitNameDone: {
-    color: '#248A3D',
-  },
-  streak: {
-    fontSize: 13,
-    color: '#8E8E93',
-    marginTop: 2,
   },
 });

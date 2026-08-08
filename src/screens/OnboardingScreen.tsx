@@ -1,22 +1,38 @@
 import { useState } from 'react';
-import { KeyboardAvoidingView, Platform, Pressable, SafeAreaView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
 import { Habit, HabitType } from '../types';
+import { PresetSelector } from '../components/PresetSelector';
+import { HabitPreset } from '../constants/presets';
 
 export function OnboardingScreen() {
   const { addHabit, startChallenge, updateSettings } = useAppData();
-  const [step, setStep] = useState<'create' | 'challenge'>('create');
+  const [step, setStep] = useState<'overview' | 'create' | 'challenge'>('overview');
   const [name, setName] = useState('');
+  const [icon, setIcon] = useState('flame');
+  const [color, setColor] = useState('#3B82F6');
   const [type, setType] = useState<HabitType>('binary');
   const [targetCount, setTargetCount] = useState(3);
   const [createdHabit, setCreatedHabit] = useState<Habit | null>(null);
+  const [selectedPresetId, setSelectedPresetId] = useState<string | undefined>();
 
   const finish = () => updateSettings({ onboardingComplete: true });
+
+  const handleSelectPreset = (preset: HabitPreset) => {
+    setSelectedPresetId(preset.id);
+    setName(preset.name);
+    setIcon(preset.icon);
+    setColor(preset.color);
+    setType(preset.type);
+    setTargetCount(preset.targetCount);
+  };
 
   const handleCreate = () => {
     const trimmed = name.trim();
     if (!trimmed) return;
-    const habit = addHabit({ name: trimmed, type, targetCount, reminderTime: null });
+    const habit = addHabit({ name: trimmed, type, targetCount, reminderTime: null, icon, color });
     setCreatedHabit(habit);
     setStep('challenge');
   };
@@ -26,6 +42,74 @@ export function OnboardingScreen() {
     finish();
   };
 
+  if (step === 'overview') {
+    return (
+      <SafeAreaView style={styles.safe}>
+        <ScrollView contentContainerStyle={styles.overviewContainer}>
+          <View style={styles.overviewHeader}>
+            <Text style={styles.logoEmoji}>✨</Text>
+            <Text style={styles.title}>How It Works</Text>
+            <Text style={styles.subtitle}>Build lasting daily habits with proven reward feedback loops.</Text>
+          </View>
+
+          <View style={styles.featureCards}>
+            <View style={styles.featureCard}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="checkbox" size={24} color="#007AFF" />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>1. Create & Track</Text>
+                <Text style={styles.featureDesc}>
+                  Set up single check-off or daily counter targets (e.g. drink 8 glasses of water).
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.featureCard}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="trophy" size={24} color="#FF9500" />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>2. Hit Milestones</Text>
+                <Text style={styles.featureDesc}>
+                  Kick off 3, 7, or 30-day streak challenges and earn animated celebratory rewards.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.featureCard}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="analytics" size={24} color="#34C759" />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>3. Visual Progress</Text>
+                <Text style={styles.featureDesc}>
+                  Track your monthly calendar heatmaps and consistency charts to stay motivated.
+                </Text>
+              </View>
+            </View>
+
+            <View style={styles.featureCard}>
+              <View style={styles.iconCircle}>
+                <Ionicons name="notifications" size={24} color="#5856D6" />
+              </View>
+              <View style={styles.featureText}>
+                <Text style={styles.featureTitle}>4. Smart Daily Reminders</Text>
+                <Text style={styles.featureDesc}>
+                  Set custom push notification times per habit to keep you on schedule.
+                </Text>
+              </View>
+            </View>
+          </View>
+
+          <Pressable style={styles.primaryButton} onPress={() => setStep('create')}>
+            <Text style={styles.primaryButtonText}>Get Started →</Text>
+          </Pressable>
+        </ScrollView>
+      </SafeAreaView>
+    );
+  }
+
   if (step === 'challenge' && createdHabit) {
     return (
       <SafeAreaView style={styles.safe}>
@@ -33,11 +117,10 @@ export function OnboardingScreen() {
           <Text style={styles.emoji}>🔥</Text>
           <Text style={styles.title}>Kick off with a 3-day challenge?</Text>
           <Text style={styles.subtitle}>
-            Do "{createdHabit.name}" three days in a row and earn a bonus reward. You can start challenges for any
-            habit later too.
+            Do "{createdHabit.name}" three days in a row and earn a bonus celebration reward!
           </Text>
           <Pressable style={styles.primaryButton} onPress={handleStartChallenge}>
-            <Text style={styles.primaryButtonText}>Start the challenge</Text>
+            <Text style={styles.primaryButtonText}>Start 3-Day Challenge</Text>
           </Pressable>
           <Pressable style={styles.skipButton} onPress={finish}>
             <Text style={styles.skipButtonText}>Maybe later</Text>
@@ -51,16 +134,23 @@ export function OnboardingScreen() {
     <SafeAreaView style={styles.safe}>
       <KeyboardAvoidingView style={styles.flex} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
         <View style={styles.header}>
-          <Text style={styles.title}>Welcome 👋</Text>
-          <Text style={styles.subtitle}>What's the first habit you want to build?</Text>
+          <Text style={styles.title}>Your First Habit 👋</Text>
+          <Text style={styles.subtitle}>What habit would you like to track daily?</Text>
         </View>
 
         <View style={styles.form}>
+          <PresetSelector selectedPresetId={selectedPresetId} onSelectPreset={handleSelectPreset} />
+
+          <Text style={styles.label}>Habit Name</Text>
           <TextInput
             style={styles.input}
-            placeholder="e.g. Drink water"
+            placeholder="e.g. Read 20 pages"
+            placeholderTextColor="#8E8E93"
             value={name}
-            onChangeText={setName}
+            onChangeText={(val) => {
+              setName(val);
+              setSelectedPresetId(undefined);
+            }}
             returnKeyType="done"
             onSubmitEditing={handleCreate}
           />
@@ -106,7 +196,7 @@ export function OnboardingScreen() {
           onPress={handleCreate}
           disabled={!name.trim()}
         >
-          <Text style={styles.primaryButtonText}>Create habit</Text>
+          <Text style={styles.primaryButtonText}>Create Habit</Text>
         </Pressable>
       </KeyboardAvoidingView>
     </SafeAreaView>
@@ -116,10 +206,65 @@ export function OnboardingScreen() {
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F5F5F7',
+    backgroundColor: '#0B0B0E',
   },
   flex: {
     flex: 1,
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
+  },
+  overviewContainer: {
+    padding: 24,
+    paddingBottom: 40,
+    width: '100%',
+    maxWidth: 680,
+    alignSelf: 'center',
+  },
+  overviewHeader: {
+    alignItems: 'center',
+    marginTop: 12,
+    marginBottom: 24,
+  },
+  logoEmoji: {
+    fontSize: 48,
+    marginBottom: 12,
+  },
+  featureCards: {
+    gap: 16,
+    marginBottom: 32,
+  },
+  featureCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#16161A',
+    borderRadius: 14,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#26262E',
+    gap: 16,
+  },
+  iconCircle: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#202026',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  featureText: {
+    flex: 1,
+  },
+  featureTitle: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#F4F4F5',
+    marginBottom: 4,
+  },
+  featureDesc: {
+    fontSize: 13,
+    color: '#9CA3AF',
+    lineHeight: 18,
   },
   header: {
     paddingHorizontal: 24,
@@ -138,14 +283,14 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 26,
     fontWeight: '700',
-    color: '#1C1C1E',
-    textAlign: 'left',
+    color: '#F4F4F5',
+    textAlign: 'center',
   },
   subtitle: {
     fontSize: 15,
-    color: '#6E6E73',
+    color: '#9CA3AF',
     marginTop: 8,
-    textAlign: 'left',
+    textAlign: 'center',
     lineHeight: 21,
   },
   form: {
@@ -154,21 +299,23 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   input: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: 12,
+    backgroundColor: '#16161A',
+    borderRadius: 14,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    fontSize: 17,
+    fontSize: 16,
+    color: '#F4F4F5',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#26262E',
   },
   label: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#6E6E73',
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#9CA3AF',
     marginTop: 24,
     marginBottom: 10,
     textTransform: 'uppercase',
+    letterSpacing: 1.2,
   },
   typeRow: {
     flexDirection: 'row',
@@ -178,19 +325,19 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingVertical: 14,
     borderRadius: 12,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#16161A',
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#26262E',
     alignItems: 'center',
   },
   typeOptionActive: {
-    backgroundColor: '#007AFF',
-    borderColor: '#007AFF',
+    backgroundColor: '#6366F1',
+    borderColor: '#6366F1',
   },
   typeOptionText: {
     fontSize: 15,
     fontWeight: '600',
-    color: '#1C1C1E',
+    color: '#9CA3AF',
   },
   typeOptionTextActive: {
     color: '#FFFFFF',
@@ -203,34 +350,36 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 20,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#16161A',
     borderRadius: 12,
     paddingVertical: 12,
     borderWidth: 1,
-    borderColor: '#E5E5EA',
+    borderColor: '#26262E',
   },
   stepperButton: {
     width: 36,
     height: 36,
     borderRadius: 18,
-    backgroundColor: '#F2F2F7',
+    backgroundColor: '#202026',
+    borderWidth: 1,
+    borderColor: '#26262E',
     alignItems: 'center',
     justifyContent: 'center',
   },
   stepperButtonText: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1C1C1E',
+    color: '#F4F4F5',
   },
   stepperCount: {
     fontSize: 20,
     fontWeight: '700',
-    color: '#1C1C1E',
+    color: '#F4F4F5',
     minWidth: 30,
     textAlign: 'center',
   },
   primaryButton: {
-    backgroundColor: '#007AFF',
+    backgroundColor: '#6366F1',
     borderRadius: 14,
     paddingVertical: 16,
     marginHorizontal: 24,
@@ -242,7 +391,7 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: '#FFFFFF',
-    fontSize: 17,
+    fontSize: 16,
     fontWeight: '700',
   },
   skipButton: {
@@ -250,8 +399,7 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   skipButtonText: {
-    color: '#8E8E93',
+    color: '#9CA3AF',
     fontSize: 15,
-    fontWeight: '600',
   },
 });

@@ -24,7 +24,14 @@ export function ConsistencyChart({ series, trackHeight = 120 }: Props) {
           const isToday = point.date === today;
           return (
             <View key={point.date} style={styles.barColumn}>
-              <View style={[styles.bar, { height: barHeight }, isToday && styles.barToday]} />
+              <View
+                style={[
+                  styles.bar,
+                  { height: barHeight },
+                  point.ratio > 0 && styles.barFilled,
+                  isToday && styles.barToday,
+                ]}
+              />
             </View>
           );
         })}
@@ -32,7 +39,7 @@ export function ConsistencyChart({ series, trackHeight = 120 }: Props) {
       {series.length <= 7 && (
         <View style={styles.labelRow}>
           {series.map((point) => (
-            <Text key={point.date} style={styles.label}>
+            <Text key={point.date} style={[styles.label, point.date === today && styles.labelToday]}>
               {weekdayInitial(point.date)}
             </Text>
           ))}
@@ -61,20 +68,28 @@ const styles = StyleSheet.create({
   bar: {
     width: '70%',
     borderRadius: 6,
-    backgroundColor: '#C7E9D2',
+    backgroundColor: '#202026',
+  },
+  barFilled: {
+    backgroundColor: '#3F3F46',
   },
   barToday: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#22C55E',
   },
   labelRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginTop: 6,
+    marginTop: 8,
   },
   label: {
     flex: 1,
     textAlign: 'center',
     fontSize: 11,
-    color: '#8E8E93',
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+  labelToday: {
+    color: '#22C55E',
+    fontWeight: '700',
   },
 });

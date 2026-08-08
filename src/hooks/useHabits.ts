@@ -8,6 +8,8 @@ type NewHabitInput = {
   type: HabitType;
   targetCount: number;
   reminderTime: string | null;
+  icon?: string;
+  color?: string;
 };
 
 export function useHabits() {
@@ -33,13 +35,15 @@ export function useHabits() {
       targetCount: input.type === 'binary' ? 1 : Math.max(1, input.targetCount),
       createdAt: todayKey(),
       reminderTime: input.reminderTime,
+      icon: input.icon ?? 'flame',
+      color: input.color ?? '#3B82F6',
       log: {},
     };
     setHabits((prev) => [...prev, habit]);
     return habit;
   }, []);
 
-  const updateHabit = useCallback((id: string, updates: Partial<Omit<Habit, 'id' | 'log' | 'createdAt'>>) => {
+  const updateHabit = useCallback((id: string, updates: Partial<Omit<Habit, 'id' | 'createdAt'>>) => {
     setHabits((prev) => prev.map((h) => (h.id === id ? { ...h, ...updates } : h)));
   }, []);
 

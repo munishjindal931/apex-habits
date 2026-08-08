@@ -9,6 +9,7 @@ type Props = {
 
 export function CalendarHeatmap({ habit, days = 30 }: Props) {
   const today = todayKey();
+  const themeColor = habit.color ?? '#22C55E';
   const cells = Array.from({ length: days }, (_, i) => dateKeyDaysAgo(days - 1 - i));
 
   return (
@@ -16,7 +17,16 @@ export function CalendarHeatmap({ habit, days = 30 }: Props) {
       {cells.map((date) => {
         const complete = isDayComplete(habit, date);
         const isToday = date === today;
-        return <View key={date} style={[styles.cell, complete && styles.cellDone, isToday && styles.cellToday]} />;
+        return (
+          <View
+            key={date}
+            style={[
+              styles.cell,
+              complete && { backgroundColor: themeColor },
+              isToday && styles.cellToday,
+            ]}
+          />
+        );
       })}
     </View>
   );
@@ -26,19 +36,19 @@ const styles = StyleSheet.create({
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
+    justifyContent: 'center',
     gap: 6,
   },
   cell: {
     width: 28,
     height: 28,
     borderRadius: 6,
-    backgroundColor: '#EDEDF2',
-  },
-  cellDone: {
-    backgroundColor: '#34C759',
+    backgroundColor: '#202026',
+    borderWidth: 1,
+    borderColor: '#26262E',
   },
   cellToday: {
     borderWidth: 2,
-    borderColor: '#007AFF',
+    borderColor: '#F4F4F5',
   },
 });

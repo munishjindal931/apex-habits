@@ -1,5 +1,23 @@
 import { Challenge, ChallengeProgress, Habit } from './types';
 
+let simulatedOffsetDays = 0;
+
+export function setSimulatedDateOffset(offset: number) {
+  simulatedOffsetDays = offset;
+}
+
+export function getSimulatedDateOffset(): number {
+  return simulatedOffsetDays;
+}
+
+function getNow(): Date {
+  const d = new Date();
+  if (simulatedOffsetDays !== 0) {
+    d.setDate(d.getDate() + simulatedOffsetDays);
+  }
+  return d;
+}
+
 function formatDateKey(d: Date): string {
   const year = d.getFullYear();
   const month = String(d.getMonth() + 1).padStart(2, '0');
@@ -8,7 +26,7 @@ function formatDateKey(d: Date): string {
 }
 
 export function todayKey(): string {
-  return formatDateKey(new Date());
+  return formatDateKey(getNow());
 }
 
 export function dateKeyDaysAgo(days: number, from: string = todayKey()): string {
@@ -59,6 +77,18 @@ export function getTotalCompletions(habit: Habit): number {
   return Object.keys(habit.log).filter((date) => isDayComplete(habit, date)).length;
 }
 
+export function getCompletionRate(habit: Habit, daysCount: number): number {
+  if (daysCount <= 0) return 0;
+  let completedCount = 0;
+  for (let offset = 0; offset < daysCount; offset += 1) {
+    const date = dateKeyDaysAgo(offset);
+    if (isDayComplete(habit, date)) {
+      completedCount += 1;
+    }
+  }
+  return Math.round((completedCount / daysCount) * 100);
+}
+
 export function getChallengeProgress(challenge: Challenge, habit: Habit | undefined): ChallengeProgress {
   if (!habit) return { status: 'failed', daysCompleted: 0 };
 
@@ -93,3 +123,4 @@ export function getConsistencySeries(habits: Habit[], days: number): { date: str
   }
   return series;
 }
+

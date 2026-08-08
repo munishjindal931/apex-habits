@@ -7,6 +7,8 @@ export type Habit = {
   targetCount: number;
   createdAt: string;
   reminderTime: string | null;
+  icon?: string;
+  color?: string;
   log: Record<string, number>;
 };
 
