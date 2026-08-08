@@ -26,31 +26,96 @@ export function AuthScreen({ onSuccess }: Props) {
       return;
     }
 
-    if (!isSupabaseConfigured) {
-      Alert.alert(
-        'Supabase Not Connected',
-        'Please enter your Supabase URL & Anon Key to authenticate.',
-        [{ text: 'Connect Supabase', onPress: () => setSetupModalVisible(true) }]
-      );
-      return;
-    }
-
     setLoading(true);
     try {
-      if (mode === 'signup') {
+      if (mode === 'signin') {
+        const { data, error } = await supabase.auth.signInWithPassword({
+          email: trimmedEmail,
+          password,
+        });
+
+        if (error) {
+          if (error.message.toLowerCase().includes('invalid login credentials')) {
+            Alert.alert(
+              'Account Not Found',
+              'No account was found for this email. Would you like to create a new Apex Habits account with this password?',
+              [
+                { text: 'Try Again', style: 'cancel' },
+                {
+                  text: 'Create Account',
+                  onPress: async () => {
+                    setMode('signup');
+                    setLoading(true);
+                    try {
+                      const signUpRes = await supabase.auth.signUp({ email: trimmedEmail, password });
+                      if (signUpRes.error) throw signUpRes.error;
+                      if (signUpRes.data.user && signUpRes.data.session) {
+                        setAuthSession(signUpRes.data.session, signUpRes.data.user);
+                        if (onSuccess) onSuccess();
+                      } else {
+                        const inRes = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+                        if (inRes.data.user && inRes.data.session) {
+                          setAuthSession(inRes.data.session, inRes.data.user);
+                          if (onSuccess) onSuccess();
+                        }
+                      }
+                    } catch (err: any) {
+                      Alert.alert('Sign Up Error', err.message);
+                    } finally {
+                      setLoading(false);
+                    }
+                  },
+                },
+              ]
+            );
+            return;
+          }
+          throw error;
+        }
+
+        if (data.session && data.user) {
+          setAuthSession(data.session, data.user);
+          if (onSuccess) onSuccess();
+        }
+      } else {
         const { data, error } = await supabase.auth.signUp({
           email: trimmedEmail,
           password,
         });
-        if (error) throw error;
+
+        if (error) {
+          if (error.message.toLowerCase().includes('already registered')) {
+            Alert.alert('Account Exists', 'This email is already registered. Signing you in...', [
+              {
+                text: 'OK',
+                onPress: async () => {
+                  setMode('signin');
+                  setLoading(true);
+                  try {
+                    const inRes = await supabase.auth.signInWithPassword({ email: trimmedEmail, password });
+                    if (inRes.error) throw inRes.error;
+                    if (inRes.data.session && inRes.data.user) {
+                      setAuthSession(inRes.data.session, inRes.data.user);
+                      if (onSuccess) onSuccess();
+                    }
+                  } catch (err: any) {
+                    Alert.alert('Sign In Error', err.message);
+                  } finally {
+                    setLoading(false);
+                  }
+                },
+              },
+            ]);
+            return;
+          }
+          throw error;
+        }
 
         if (data.user) {
-          // If session was returned or auto-signin active
           if (data.session) {
             setAuthSession(data.session, data.user);
             if (onSuccess) onSuccess();
           } else {
-            // Attempt immediate sign in with the new credentials
             const signInRes = await supabase.auth.signInWithPassword({
               email: trimmedEmail,
               password,
@@ -58,25 +123,8 @@ export function AuthScreen({ onSuccess }: Props) {
             if (signInRes.data.session && signInRes.data.user) {
               setAuthSession(signInRes.data.session, signInRes.data.user);
               if (onSuccess) onSuccess();
-            } else {
-              Alert.alert(
-                'Account Created! 🎉',
-                'Your Apex Habits account has been created. Please sign in now.',
-                [{ text: 'Sign In', onPress: () => setMode('signin') }]
-              );
             }
           }
-        }
-      } else {
-        const { data, error } = await supabase.auth.signInWithPassword({
-          email: trimmedEmail,
-          password,
-        });
-        if (error) throw error;
-
-        if (data.session && data.user) {
-          setAuthSession(data.session, data.user);
-          if (onSuccess) onSuccess();
         }
       }
     } catch (err: any) {
@@ -102,18 +150,6 @@ export function AuthScreen({ onSuccess }: Props) {
                 : 'Create an Apex Habits account to track & sync habits'}
             </Text>
           </View>
-
-          {/* Config Setup Alert Banner */}
-          {!isSupabaseConfigured && (
-            <Pressable style={styles.setupBanner} onPress={() => setSetupModalVisible(true)}>
-              <Ionicons name="cloud-offline" size={20} color="#F59E0B" />
-              <View style={styles.setupBannerTextContainer}>
-                <Text style={styles.setupBannerTitle}>Supabase Not Connected Yet</Text>
-                <Text style={styles.setupBannerSub}>Tap to enter URL & Anon Key or edit .env</Text>
-              </View>
-              <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
-            </Pressable>
-          )}
 
           {/* Mode Switcher */}
           <View style={styles.tabRow}>
@@ -229,30 +265,6 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 6,
     textAlign: 'center',
-  },
-  setupBanner: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1A160B',
-    borderRadius: 14,
-    padding: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#3B2E1E',
-    gap: 12,
-  },
-  setupBannerTextContainer: {
-    flex: 1,
-  },
-  setupBannerTitle: {
-    color: '#F59E0B',
-    fontSize: 14,
-    fontWeight: '700',
-  },
-  setupBannerSub: {
-    color: '#D97706',
-    fontSize: 12,
-    marginTop: 2,
   },
   tabRow: {
     flexDirection: 'row',

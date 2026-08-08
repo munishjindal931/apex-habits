@@ -46,71 +46,63 @@ CREATE TABLE IF NOT EXISTS public.challenges (
   created_at TIMESTAMP WITH TIME ZONE DEFAULT timezone('utc'::text, now()) NOT NULL
 );
 
+-- Grant schema permissions to authenticated users
+GRANT USAGE ON SCHEMA public TO authenticated, anon;
+GRANT ALL ON ALL TABLES IN SCHEMA public TO authenticated, anon;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO authenticated, anon;
+
 -- Enable Row Level Security (RLS) on all tables
 ALTER TABLE public.profiles ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.habits ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.habit_logs ENABLE ROW LEVEL SECURITY;
 ALTER TABLE public.challenges ENABLE ROW LEVEL SECURITY;
 
--- RLS Policies: Profiles
-CREATE POLICY "Users can view their own profile" ON public.profiles
-  FOR SELECT USING (auth.uid() = id);
+-- Drop any existing conflicting policies
+DROP POLICY IF EXISTS "Authenticated users full access to profiles" ON public.profiles;
+DROP POLICY IF EXISTS "Authenticated users full access to habits" ON public.habits;
+DROP POLICY IF EXISTS "Authenticated users full access to habit_logs" ON public.habit_logs;
+DROP POLICY IF EXISTS "Authenticated users full access to challenges" ON public.challenges;
 
-CREATE POLICY "Users can insert their own profile" ON public.profiles
-  FOR INSERT WITH CHECK (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can select their own habits" ON public.habits;
+DROP POLICY IF EXISTS "Users can insert their own habits" ON public.habits;
+DROP POLICY IF EXISTS "Users can update their own habits" ON public.habits;
+DROP POLICY IF EXISTS "Users can delete their own habits" ON public.habits;
 
-CREATE POLICY "Users can update their own profile" ON public.profiles
-  FOR UPDATE USING (auth.uid() = id);
+DROP POLICY IF EXISTS "Users can select their own habit logs" ON public.habit_logs;
+DROP POLICY IF EXISTS "Users can insert their own habit logs" ON public.habit_logs;
+DROP POLICY IF EXISTS "Users can update their own habit logs" ON public.habit_logs;
+DROP POLICY IF EXISTS "Users can delete their own habit logs" ON public.habit_logs;
 
--- RLS Policies: Habits
-CREATE POLICY "Users can select their own habits" ON public.habits
-  FOR SELECT USING (auth.uid() = user_id);
+DROP POLICY IF EXISTS "Users can select their own challenges" ON public.challenges;
+DROP POLICY IF EXISTS "Users can insert their own challenges" ON public.challenges;
+DROP POLICY IF EXISTS "Users can update their own challenges" ON public.challenges;
+DROP POLICY IF EXISTS "Users can delete their own challenges" ON public.challenges;
 
-CREATE POLICY "Users can insert their own habits" ON public.habits
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
+-- Unified Full Access RLS Policies for Authenticated Users
+CREATE POLICY "Authenticated users full access to profiles" ON public.profiles
+  FOR ALL TO authenticated USING (auth.uid() = id) WITH CHECK (auth.uid() = id);
 
-CREATE POLICY "Users can update their own habits" ON public.habits
-  FOR UPDATE USING (auth.uid() = user_id);
+CREATE POLICY "Authenticated users full access to habits" ON public.habits
+  FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
-CREATE POLICY "Users can delete their own habits" ON public.habits
-  FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Authenticated users full access to habit_logs" ON public.habit_logs
+  FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
--- RLS Policies: Habit Logs
-CREATE POLICY "Users can select their own habit logs" ON public.habit_logs
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own habit logs" ON public.habit_logs
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own habit logs" ON public.habit_logs
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own habit logs" ON public.habit_logs
-  FOR DELETE USING (auth.uid() = user_id);
-
--- RLS Policies: Challenges
-CREATE POLICY "Users can select their own challenges" ON public.challenges
-  FOR SELECT USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can insert their own challenges" ON public.challenges
-  FOR INSERT WITH CHECK (auth.uid() = user_id);
-
-CREATE POLICY "Users can update their own challenges" ON public.challenges
-  FOR UPDATE USING (auth.uid() = user_id);
-
-CREATE POLICY "Users can delete their own challenges" ON public.challenges
-  FOR DELETE USING (auth.uid() = user_id);
+CREATE POLICY "Authenticated users full access to challenges" ON public.challenges
+  FOR ALL TO authenticated USING (auth.uid() = user_id) WITH CHECK (auth.uid() = user_id);
 
 -- Trigger to automatically create a profile record when a new user signs up
 CREATE OR REPLACE FUNCTION public.handle_new_user()
 RETURNS TRIGGER AS $$
 BEGIN
   INSERT INTO public.profiles (id, onboarding_complete)
-  VALUES (new.id, false);
+  VALUES (new.id, false)
+  ON CONFLICT (id) DO NOTHING;
   RETURN NEW;
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
-CREATE OR REPLACE TRIGGER on_auth_user_created
+DROP TRIGGER IF EXISTS on_auth_user_created ON auth.users;
+CREATE TRIGGER on_auth_user_created
   AFTER INSERT ON auth.users
   FOR EACH ROW EXECUTE FUNCTION public.handle_new_user();
