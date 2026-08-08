@@ -14,6 +14,7 @@ A sleek, modern cross-platform habit tracking application built with **React Nat
   * 30-day overall completion trend charts.
   * GitHub-style 30-day calendar heatmaps with habit-specific color themes.
 * ⏰ **Custom Alarms & Reminders**: Set custom daily reminder times per habit with active alarm status confirmation badges.
+* ☁️ **Supabase Auth & Cloud Sync**: Email/password sign-up & sign-in gate the app after onboarding. Habits, logs, and challenges are cached locally first (so the app works offline) and bi-directionally synced to a Supabase Postgres project on sign-in and on every change.
 * 🧪 **Developer Test Tools**: Built-in dev tools modal supporting:
   * **Time Travel Simulation** (+1 Day, +3 Days, Date Reset).
   * **Celebration Overlays** (sound & haptics test).
@@ -29,7 +30,8 @@ A sleek, modern cross-platform habit tracking application built with **React Nat
 * **Language**: TypeScript
 * **Navigation**: React Navigation (Native Stack with Dark Theme)
 * **Icons**: `@expo/vector-icons` (Ionicons)
-* **Storage**: `@react-native-async-storage/async-storage`
+* **Storage**: `@react-native-async-storage/async-storage` (local-first cache)
+* **Backend**: Supabase (`@supabase/supabase-js`) — email/password auth + Postgres cloud sync
 * **Feedback**: `expo-audio` & `expo-haptics`
 
 ---
@@ -40,6 +42,7 @@ A sleek, modern cross-platform habit tracking application built with **React Nat
 * **Node.js**: `v18+`
 * **npm** or **yarn**
 * **Expo Go App** on iOS or Android (if testing on phone)
+* A **Supabase** project (for auth + cloud sync) — free tier is fine
 
 ### Installation
 ```bash
@@ -51,7 +54,14 @@ cd apex-habits
 
 # Install dependencies
 npm install
+
+# Configure Supabase credentials
+cp .env.example .env
+# then fill in EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY
+# from your Supabase project's Settings -> API page
 ```
+
+Sign-up/sign-in is required before reaching the main app — there is no guest mode.
 
 ### Running the App
 
@@ -83,18 +93,24 @@ Scan the ASCII **QR Code** in your terminal using the **Expo Go** app (Android) 
 │   │   ├── CreateChallengeModal.tsx# Kickstart challenge setup sheet
 │   │   ├── DevToolsModal.tsx       # Developer testing & time travel tools
 │   │   ├── HabitCard.tsx           # Minimalist dark habit card with stepper & checkmark
-│   │   └── PresetSelector.tsx      # 1-tap preset habit scroll pills
+│   │   ├── PresetSelector.tsx      # 1-tap preset habit scroll pills
+│   │   └── SupabaseSetupModal.tsx  # Live Supabase connection status sheet
 │   ├── constants/             # Habit presets, icon sets, & color palettes
 │   ├── context/               # Global state & persistence (AppDataContext)
+│   ├── feedback/              # Reward-loop side effects (sound, haptics, notifications)
 │   ├── habitUtils.ts          # Streak math, simulated date offset, & completion rates
+│   ├── lib/
+│   │   ├── supabase.ts             # Supabase client singleton (auth + Postgres sync)
+│   │   └── alert.ts                # Cross-platform Alert.alert shim (web-safe)
 │   ├── navigation/            # Root stack navigator with MinimalDarkTheme
 │   ├── screens/               # Main application views
+│   │   ├── OnboardingScreen.tsx    # First-run "How It Works" info screen
+│   │   ├── AuthScreen.tsx          # Email/password sign in & sign up
 │   │   ├── HomeScreen.tsx          # Today screen & Hero progress card
 │   │   ├── HabitDetailScreen.tsx   # Individual habit analytics & log history
 │   │   ├── ProgressScreen.tsx      # Overview trends & active/past challenges
-│   │   ├── SettingsScreen.tsx      # App options & dev tools entry
-│   │   ├── AddEditHabitScreen.tsx  # Habit creation & editing form
-│   │   └── OnboardingScreen.tsx    # First-run onboarding flow
+│   │   ├── SettingsScreen.tsx      # App options, sign out, & dev tools entry
+│   │   └── AddEditHabitScreen.tsx  # Habit creation & editing form
 │   └── types.ts               # TypeScript data models
 ```
 

@@ -1,8 +1,9 @@
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
 import { requestNotificationPermission } from '../feedback/notifications';
+import { showAlert } from '../lib/alert';
 import { DevToolsModal } from '../components/DevToolsModal';
 
 export function SettingsScreen() {
@@ -12,7 +13,7 @@ export function SettingsScreen() {
     if (value) {
       const granted = await requestNotificationPermission();
       if (!granted) {
-        Alert.alert(
+        showAlert(
           'Notifications disabled',
           'Enable notifications for this app in your device settings to get reminders.'
         );
@@ -23,7 +24,7 @@ export function SettingsScreen() {
   };
 
   const handleSignOut = () => {
-    Alert.alert('Sign Out?', 'You will be signed out of your account. Local cache will remain.', [
+    showAlert('Sign Out?', 'You will be signed out of your account. Local cache will remain.', [
       { text: 'Cancel', style: 'cancel' },
       { text: 'Sign Out', style: 'destructive', onPress: signOut },
     ]);

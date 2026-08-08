@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ActivityIndicator, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useAppData } from '../context/AppDataContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { showAlert } from '../lib/alert';
 import { SupabaseSetupModal } from '../components/SupabaseSetupModal';
 
 type Props = {
@@ -22,7 +23,7 @@ export function AuthScreen({ onSuccess }: Props) {
   const handleAuth = async () => {
     const trimmedEmail = email.trim();
     if (!trimmedEmail || !password) {
-      Alert.alert('Missing fields', 'Please enter both email and password.');
+      showAlert('Missing fields', 'Please enter both email and password.');
       return;
     }
 
@@ -38,7 +39,7 @@ export function AuthScreen({ onSuccess }: Props) {
         if (error) {
           console.warn('[AuthScreen] signInWithPassword returned error:', error.message);
           if (error.message.toLowerCase().includes('invalid login credentials')) {
-            Alert.alert(
+            showAlert(
               'Account Not Found',
               'No account was found for this email. Would you like to create a new Apex Habits account with this password?',
               [
@@ -66,7 +67,7 @@ export function AuthScreen({ onSuccess }: Props) {
                       }
                     } catch (err: any) {
                       console.error('[AuthScreen] Auto sign-up error:', err);
-                      Alert.alert('Sign Up Error', err.message);
+                      showAlert('Sign Up Error', err.message);
                     } finally {
                       setLoading(false);
                     }
@@ -93,7 +94,7 @@ export function AuthScreen({ onSuccess }: Props) {
         if (error) {
           console.warn('[AuthScreen] signUp returned error:', error.message);
           if (error.message.toLowerCase().includes('already registered')) {
-            Alert.alert('Account Exists', 'This email is already registered. Signing you in...', [
+            showAlert('Account Exists', 'This email is already registered. Signing you in...', [
               {
                 text: 'OK',
                 onPress: async () => {
@@ -109,7 +110,7 @@ export function AuthScreen({ onSuccess }: Props) {
                     }
                   } catch (err: any) {
                     console.error('[AuthScreen] Sign in error:', err);
-                    Alert.alert('Sign In Error', err.message);
+                    showAlert('Sign In Error', err.message);
                   } finally {
                     setLoading(false);
                   }
@@ -142,7 +143,7 @@ export function AuthScreen({ onSuccess }: Props) {
       }
     } catch (err: any) {
       console.error('[AuthScreen] handleAuth error:', err);
-      Alert.alert('Authentication Error', err.message || 'Failed to authenticate.');
+      showAlert('Authentication Error', err.message || 'Failed to authenticate.');
     } finally {
       setLoading(false);
     }

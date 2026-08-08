@@ -1,10 +1,11 @@
 import { useLayoutEffect, useState } from 'react';
-import { Alert, Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Switch, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { NativeStackScreenProps } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../navigation/types';
 import { useAppData } from '../context/AppDataContext';
+import { showAlert } from '../lib/alert';
 import { PresetSelector } from '../components/PresetSelector';
 import { AVAILABLE_COLORS, AVAILABLE_ICONS, HabitPreset } from '../constants/presets';
 import { HabitType } from '../types';
@@ -78,7 +79,7 @@ export function AddEditHabitScreen({ navigation, route }: Props) {
 
   const handleDelete = () => {
     if (!existing) return;
-    Alert.alert('Delete habit?', `This removes "${existing.name}" and its history.`, [
+    showAlert('Delete habit?', `This removes "${existing.name}" and its history.`, [
       { text: 'Cancel', style: 'cancel' },
       {
         text: 'Delete',
