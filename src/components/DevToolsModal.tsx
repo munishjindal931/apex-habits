@@ -17,10 +17,16 @@ export function DevToolsModal({ visible, onClose }: Props) {
     triggerCelebration,
     fastCompleteActiveChallenge,
     seedMockHistory,
+    updateSettings,
   } = useAppData();
 
   const currentOffset = getSimulatedDateOffset();
   const today = todayKey();
+
+  const handleRestartOnboarding = () => {
+    updateSettings({ onboardingComplete: false });
+    onClose();
+  };
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet" onRequestClose={onClose}>
@@ -36,6 +42,16 @@ export function DevToolsModal({ visible, onClose }: Props) {
         </View>
 
         <ScrollView contentContainerStyle={styles.content}>
+          {/* Restart Onboarding Section */}
+          <Text style={styles.sectionHeader}>🔄 Navigation & Onboarding Reset</Text>
+          <View style={styles.card}>
+            <Text style={styles.cardSubtitle}>Reset onboarding state to test first-time user experience:</Text>
+            <Pressable style={styles.restartBtn} onPress={handleRestartOnboarding}>
+              <Ionicons name="reload-circle" size={20} color="#FFFFFF" />
+              <Text style={styles.restartBtnText}>Restart App from Onboarding Screen</Text>
+            </Pressable>
+          </View>
+
           {/* Time Travel Section */}
           <Text style={styles.sectionHeader}>⏳ Time Travel Simulation</Text>
           <View style={styles.card}>
@@ -163,6 +179,20 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     fontWeight: '600',
     marginBottom: 8,
+  },
+  restartBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#6366F1',
+    paddingVertical: 14,
+    borderRadius: 12,
+  },
+  restartBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+    fontSize: 15,
   },
   dateDisplay: {
     fontSize: 18,
