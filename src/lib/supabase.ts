@@ -5,8 +5,10 @@ import { createClient, SupabaseClient } from '@supabase/supabase-js';
 const STORAGE_URL_KEY = 'apex_habits_supabase_url';
 const STORAGE_ANON_KEY = 'apex_habits_supabase_anon';
 
-export let SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://your-supabase-project.supabase.co';
-export let SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'your-anon-key-placeholder';
+export let SUPABASE_URL =
+  process.env.EXPO_PUBLIC_SUPABASE_URL || 'https://wovlhgvnlnxlazgedydd.supabase.co';
+export let SUPABASE_ANON_KEY =
+  process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || 'sb_publishable_wsbrMuGM_jtwsSHWhUyV3w_oL1DLyfl';
 
 export function checkIsConfigured(url = SUPABASE_URL, key = SUPABASE_ANON_KEY): boolean {
   return Boolean(
