@@ -3,6 +3,7 @@ import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, Sc
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
+import { SupabaseSetupModal } from '../components/SupabaseSetupModal';
 
 type Props = {
   onContinueAsGuest: () => void;
@@ -13,7 +14,9 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [setupModalVisible, setSetupModalVisible] = useState(false);
 
   const handleAuth = async () => {
     const trimmedEmail = email.trim();
@@ -24,9 +27,12 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
 
     if (!isSupabaseConfigured) {
       Alert.alert(
-        'Supabase Not Configured',
-        'Please add your Supabase URL & Anon Key to process.env or src/lib/supabase.ts. Continuing in local mode for now.',
-        [{ text: 'OK', onPress: onContinueAsGuest }]
+        'Supabase Not Connected',
+        'Please enter your Supabase URL & Anon Key to authenticate with cloud database.',
+        [
+          { text: 'Connect Supabase', onPress: () => setSetupModalVisible(true) },
+          { text: 'Use Local Mode', onPress: onContinueAsGuest },
+        ]
       );
       return;
     }
@@ -74,6 +80,18 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
             </Text>
           </View>
 
+          {/* Config Setup Alert Banner */}
+          {!isSupabaseConfigured && (
+            <Pressable style={styles.setupBanner} onPress={() => setSetupModalVisible(true)}>
+              <Ionicons name="cloud-offline" size={20} color="#F59E0B" />
+              <View style={styles.setupBannerTextContainer}>
+                <Text style={styles.setupBannerTitle}>Supabase Not Connected Yet</Text>
+                <Text style={styles.setupBannerSub}>Tap to enter URL & Anon Key or edit .env</Text>
+              </View>
+              <Ionicons name="chevron-forward" size={18} color="#F59E0B" />
+            </Pressable>
+          )}
+
           {/* Mode Switcher */}
           <View style={styles.tabRow}>
             <Pressable
@@ -105,14 +123,19 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
             />
 
             <Text style={styles.label}>Password</Text>
-            <TextInput
-              style={styles.input}
-              value={password}
-              onChangeText={setPassword}
-              placeholder="••••••••"
-              placeholderTextColor="#6B7280"
-              secureTextEntry
-            />
+            <View style={styles.passwordRow}>
+              <TextInput
+                style={styles.passwordInput}
+                value={password}
+                onChangeText={setPassword}
+                placeholder="••••••••"
+                placeholderTextColor="#6B7280"
+                secureTextEntry={!showPassword}
+              />
+              <Pressable style={styles.eyeButton} onPress={() => setShowPassword(!showPassword)}>
+                <Ionicons name={showPassword ? 'eye-off' : 'eye'} size={20} color="#9CA3AF" />
+              </Pressable>
+            </View>
 
             <Pressable
               style={[styles.primaryButton, loading && styles.primaryButtonDisabled]}
@@ -142,6 +165,12 @@ export function AuthScreen({ onContinueAsGuest, onSuccess }: Props) {
           </Pressable>
         </ScrollView>
       </KeyboardAvoidingView>
+
+      <SupabaseSetupModal
+        visible={setupModalVisible}
+        onClose={() => setSetupModalVisible(false)}
+        onSuccess={() => {}}
+      />
     </SafeAreaView>
   );
 }
@@ -165,7 +194,7 @@ const styles = StyleSheet.create({
   },
   header: {
     alignItems: 'center',
-    marginBottom: 28,
+    marginBottom: 20,
   },
   logoBadge: {
     width: 64,
@@ -189,6 +218,30 @@ const styles = StyleSheet.create({
     color: '#9CA3AF',
     marginTop: 6,
     textAlign: 'center',
+  },
+  setupBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1A160B',
+    borderRadius: 14,
+    padding: 14,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#3B2E1E',
+    gap: 12,
+  },
+  setupBannerTextContainer: {
+    flex: 1,
+  },
+  setupBannerTitle: {
+    color: '#F59E0B',
+    fontSize: 14,
+    fontWeight: '700',
+  },
+  setupBannerSub: {
+    color: '#D97706',
+    fontSize: 12,
+    marginTop: 2,
   },
   tabRow: {
     flexDirection: 'row',
@@ -238,6 +291,25 @@ const styles = StyleSheet.create({
     color: '#F4F4F5',
     borderWidth: 1,
     borderColor: '#26262E',
+  },
+  passwordRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#16161A',
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: '#26262E',
+    paddingRight: 14,
+  },
+  passwordInput: {
+    flex: 1,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#F4F4F5',
+  },
+  eyeButton: {
+    padding: 4,
   },
   primaryButton: {
     backgroundColor: '#6366F1',
