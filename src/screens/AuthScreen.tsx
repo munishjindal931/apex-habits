@@ -2,14 +2,16 @@ import { useState } from 'react';
 import { ActivityIndicator, Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
+import { useAppData } from '../context/AppDataContext';
 import { isSupabaseConfigured, supabase } from '../lib/supabase';
 import { SupabaseSetupModal } from '../components/SupabaseSetupModal';
 
 type Props = {
-  onSuccess: () => void;
+  onSuccess?: () => void;
 };
 
 export function AuthScreen({ onSuccess }: Props) {
+  const { setAuthSession } = useAppData();
   const [mode, setMode] = useState<'signin' | 'signup'>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -42,24 +44,40 @@ export function AuthScreen({ onSuccess }: Props) {
         });
         if (error) throw error;
 
-        // Auto sign in if session returned directly
-        if (data.session) {
-          Alert.alert('Account Created! 🎉', 'Welcome to Apex Habits!');
-          onSuccess();
-        } else {
-          Alert.alert(
-            'Account Created! 🎉',
-            'Your account has been created. Please sign in with your email and password.',
-            [{ text: 'Sign In Now', onPress: () => setMode('signin') }]
-          );
+        if (data.user) {
+          // If session was returned or auto-signin active
+          if (data.session) {
+            setAuthSession(data.session, data.user);
+            if (onSuccess) onSuccess();
+          } else {
+            // Attempt immediate sign in with the new credentials
+            const signInRes = await supabase.auth.signInWithPassword({
+              email: trimmedEmail,
+              password,
+            });
+            if (signInRes.data.session && signInRes.data.user) {
+              setAuthSession(signInRes.data.session, signInRes.data.user);
+              if (onSuccess) onSuccess();
+            } else {
+              Alert.alert(
+                'Account Created! 🎉',
+                'Your Apex Habits account has been created. Please sign in now.',
+                [{ text: 'Sign In', onPress: () => setMode('signin') }]
+              );
+            }
+          }
         }
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        const { data, error } = await supabase.auth.signInWithPassword({
           email: trimmedEmail,
           password,
         });
         if (error) throw error;
-        onSuccess();
+
+        if (data.session && data.user) {
+          setAuthSession(data.session, data.user);
+          if (onSuccess) onSuccess();
+        }
       }
     } catch (err: any) {
       Alert.alert('Authentication Error', err.message || 'Failed to authenticate.');
@@ -80,8 +98,8 @@ export function AuthScreen({ onSuccess }: Props) {
             <Text style={styles.title}>Apex Habits</Text>
             <Text style={styles.subtitle}>
               {mode === 'signin'
-                ? 'Sign in to access your habits & cloud database'
-                : 'Create an account to start tracking habits in Supabase'}
+                ? 'Sign in to your Apex Habits account'
+                : 'Create an Apex Habits account to track & sync habits'}
             </Text>
           </View>
 
@@ -151,7 +169,7 @@ export function AuthScreen({ onSuccess }: Props) {
                 <ActivityIndicator color="#FFFFFF" />
               ) : (
                 <Text style={styles.primaryButtonText}>
-                  {mode === 'signin' ? 'Sign In to Account' : 'Create Supabase Account'}
+                  {mode === 'signin' ? 'Sign In to Apex Habits' : 'Create Apex Habits Account'}
                 </Text>
               )}
             </Pressable>

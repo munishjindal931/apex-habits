@@ -421,6 +421,11 @@ function useAppDataValue() {
 
   const clearCelebration = useCallback(() => setCelebration({ kind: null }), []);
 
+  const setAuthSession = useCallback((newSession: Session | null, newUser: User | null) => {
+    setSession(newSession);
+    setUser(newUser);
+  }, []);
+
   const signOut = useCallback(async () => {
     if (isSupabaseConfigured) {
       await supabase.auth.signOut();
@@ -443,6 +448,7 @@ function useAppDataValue() {
     loaded,
     session,
     user,
+    setAuthSession,
     signOut,
     celebration: celebration.kind,
     celebrationLabel: celebration.label,
